@@ -1,0 +1,123 @@
+version: '3.8'
+services:
+  # Elasticsearch nodes
+  es01:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.1.4
+    container_name: es01
+    environment:
+      - node.name=es01
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es02,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata01:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - esnet
+
+  es02:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.1.4
+    container_name: es02
+    environment:
+      - node.name=es02
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es03
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata02:/usr/share/elasticsearch/data
+    ports:
+      - 9201:9200
+      - 9301:9300
+    networks:
+      - esnet
+
+  es03:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.1.4
+    container_name: es03
+    environment:
+      - node.name=es03
+      - cluster.name=es-docker-cluster
+      - discovery.seed_hosts=es01,es02
+      - cluster.initial_master_nodes=es01,es02,es03
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - esdata03:/usr/share/elasticsearch/data
+    ports:
+      - 9202:9200
+      - 9302:9300
+    networks:
+      - esnet
+
+  # Kibana nodes
+  kibana01:
+    image: docker.elastic.co/kibana/kibana:9.1.4
+    container_name: kibana01
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es01:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=changeme
+    ports:
+      - 5601:5601
+    networks:
+      - esnet
+    depends_on:
+      - es01
+
+  kibana02:
+    image: docker.elastic.co/kibana/kibana:9.1.4
+    container_name: kibana02
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es02:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=changeme
+    ports:
+      - 5602:5601
+    networks:
+      - esnet
+    depends_on:
+      - es02
+
+  kibana03:
+    image: docker.elastic.co/kibana/kibana:9.1.4
+    container_name: kibana03
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es03:9200
+      - ELASTICSEARCH_USERNAME=elastic
+      - ELASTICSEARCH_PASSWORD=changeme
+    ports:
+      - 5603:5601
+    networks:
+      - esnet
+    depends_on:
+      - es03
+
+volumes:
+  esdata01:
+  esdata02:
+  esdata03:
+
+networks:
+  esnet:
+    driver: bridge
